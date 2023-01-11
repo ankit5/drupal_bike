@@ -1,0 +1,52 @@
+<?php
+
+use Drupal\toolbar_link\Entity\ToolbarItemSettings;
+use Drupal\toolbar_link\Entity\ToolbarLinkItem;
+use Drupal\Core\Url;
+use Drupal\Core\Template\Attribute;
+
+/**
+ * Implements hook_toolbar()
+ */
+function toolbar_link_toolbar() {
+  $toolbar_link_items = ToolbarLinkItem::loadMultipleSorted();
+  $items = [];
+
+  foreach ($toolbar_link_items as $toolbar_link_item) {
+    if (!$toolbar_link_item->enabled) {
+      continue;
+    }
+    $toolbar_link_item->attributes['class'] = isset($toolbar_link_item->attributes['class']) ? explode(' ', $toolbar_link_item->attributes['class']) : [];
+
+    if (empty($toolbar_link_item->attributes['target'])) {
+      unset($toolbar_link_item->attributes['target']);
+    }
+    if (empty($toolbar_link_item->attributes['rel'])) {
+      unset($toolbar_link_item->attributes['rel']);
+    }
+    $items[$toolbar_link_item->id] = [
+      '#cache' => [
+        'contexts' => [
+          'user.permissions',
+        ],
+      ],
+      '#type' => 'toolbar_item',
+      'tab' => [
+        '#type' => 'link',
+        '#title' => $toolbar_link_item->text,
+        '#url' => Url::fromUri(ToolbarLinkItem::getUserEnteredStringAsUri($toolbar_link_item->url)),
+        '#attributes' => $toolbar_link_item->attributes,
+        '#cache' => [],
+      ],
+      '#wrapper_attributes' => [
+        'class' => [],
+      ],
+      '#attached' => [
+        'library' => [],
+      ],
+      '#weight' => $toolbar_link_item->weight,
+    ];
+  }
+
+  return $items;
+}

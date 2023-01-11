@@ -1,0 +1,35 @@
+version: 0.2
+env:
+   secrets-manager:
+     SONARQUBE_USER_CREDENTIAL_SECRET: SONARQUBE_USER_CREDENTIAL_SECRET
+     DOCKER_HUB_USERNAME: DOCKER_HUB_USERNAME
+     DOCKER_HUB_PASSWORD: DOCKER_HUB_PASSWORD
+phases:
+  pre_build:
+    commands:
+      - DOCKER_HUB_USERNAME=$(echo ${DOCKER_HUB_USERNAME} | jq -r '.DOCKER_HUB_USERNAME')
+      - DOCKER_HUB_PASSWORD=$(echo ${DOCKER_HUB_PASSWORD} | jq -r '.DOCKER_HUB_PASSWORD')
+      - echo Logging in to Docker Hub...SONARQUBE_USER_CREDENTIAL_SECRET:${SONARQUBE_USER_CREDENTIAL_SECRET},DOCKER_HUB_USERNAME:${DOCKER_HUB_USERNAME},DOCKER_HUB_PASSWORD:${DOCKER_HUB_PASSWORD}
+      - docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - REPOSITORY_URI=469831561154.dkr.ecr.ap-south-1.amazonaws.com/uat-cms
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t prod-cms:latest .
+      - docker tag prod-cms:latest $REPOSITORY_URI:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - echo Writing image definitions file...
+      - printf '[{"name":"cms","imageUri":"%s"}]' $REPOSITORY_URI:latest > imagedefinitions.json
+      - cat imagedefinitions.json 
+artifacts:
+  files: imagedefinitions.json

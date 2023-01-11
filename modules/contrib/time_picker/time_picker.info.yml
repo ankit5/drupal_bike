@@ -1,0 +1,13 @@
+name: Time and Time Range Picker Field
+type: module
+description: 'Provides "Time Picker Field" and "Time Range Picker Field".'
+core: 8.x
+core_version_requirement: ^8 || ^9
+package: 'Field types'
+dependencies:
+  - drupal:datetime
+
+# Information added by Drupal.org packaging script on 2020-04-27
+version: '8.x-5.3'
+project: 'time_picker'
+datestamp: 1587984343

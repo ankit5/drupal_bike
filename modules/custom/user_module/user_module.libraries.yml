@@ -1,0 +1,39 @@
+user_module_css:
+  version: 1.x
+  css:
+    base:
+      css/dashboard.css: {}
+
+user_module_order_css:
+  version: 1.x
+  css:
+    base:
+      css/order.css: {}
+
+user_module_js:
+  version: 1.x
+  js:
+    js/datepicker.js: {}
+
+drupal_js:
+  version: 1.x
+  js:
+    js/drupal.js: {}
+
+global:
+  dependencies:
+    - core/jquery
+    - core/jquery.ui.datepicker
+
+toolbar:
+  version: 0.0.1
+  js:
+    js/toolbar.js: {}
+  dependencies:
+    - toolbar/toolbar
+ 
+user_module_external:
+  version: 1.x
+  css:
+    base:
+      https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap-grid.min.css: { type: external, minified: true }

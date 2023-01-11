@@ -1,0 +1,10 @@
+services:
+  user_module.customTwigExtension:
+    class: Drupal\user_module\CustomTwigExtension
+    tags:
+      - { name: twig.extension }
+  user_module.node_entity:
+    class: Drupal\user_module\Normalizer\NodeEntityNormalizer
+    arguments: ['@entity.manager']
+    tags:
+      - { name: normalizer, priority: 9 }

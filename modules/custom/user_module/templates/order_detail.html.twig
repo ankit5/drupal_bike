@@ -1,0 +1,347 @@
+<div class="orderListContainer">
+    <div class="content_width">
+        <div class="row">
+            <div class="col-md-8 col-12 mb-30">
+                <div class="orderGridCard">
+                    <div class="ordrDtlsData">
+                        <div class="invcCont">
+                            <h4>Delivery Details</h4>
+                            <div style="float:right;">
+                         <h4>Change Order Status</h4>
+                        <select id="or_status">
+                        <option value="">-Select-</option>
+                         {% for key, value in data.or_status %}
+                        <option value="{{ key }}">{{ value }}</option>
+                        {% endfor %}
+                        </select>
+                        <div class="progress_bar"></div>
+                        <input type="hidden" id="order_id" value="{{ data.id }}"/>
+                             </div>
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-8 col-12">
+                                <ul class="orderListIng">
+                                    <li>
+                                        <h5>Order ID</h5>
+                                        <p>{{ data.order_id_show }}</p>
+                                    </li>
+                                    <li>
+                                        <h5>Order Date</h5>
+                                        <p>{{ data.cust_orders_created_at|date("d/m/Y") }} </p>
+                                    </li>
+                                    <li>
+                                        <h5>Sold By</h5>
+                                        <p>{{ data.cust_orders_store_name }} 
+{{ twig_json_decode(data.cust_orders_store_address ,'store_address') }}
+                                        </p>
+                                    </li>
+                                   
+                                    <li>
+                                        <h5>Order Status</h5>
+                                        <p><span>
+                                     {% if(data.cust_orders_shipping_status=='Pending') %}
+                                       Booking Payment Pending 
+                                     {% else %}
+                                        {{ data.cust_orders_shipping_status }}</span>
+
+
+
+                                        </p>
+                                      {%  endif %}
+                                    </li>
+                                    {% if(data.cust_orders_shipping_status=='Cancelled') %}
+<li>
+                                        <h5>Reason</h5>
+                                        <p>
+
+{% if(data.cancel_reason!='string') %} {{ data.cancel_reason }} {% endif %}
+</p>
+</li>
+ <li>
+                                        <h5>Comment</h5>
+                                        <p>
+
+{{ data.cancel_description }}
+</p>
+</li>
+{% endif %}
+
+                                </ul>
+                            </div>
+                            <div class="col-md-6 col-12">
+{% if(data.cust_orders_shipping_status!='Cancelled') %}
+                                <div class="orderCardBtnCont  flex-start mt-10"><button class="primryWhiteBtn use-ajax" style="" data-dialog-options="{&quot;width&quot;:600, &quot;title&quot;:&quot;Order Cancel {{ data.order_id_show }}&quot;}" data-dialog-type="modal" href="{{ path('<front>') }}admin/cencel_order/{{ data.id }}" >Cancel Order</button></div>
+                                {% endif %}
+
+
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="orderGridCard">
+                    <div class="orderItemsCont">
+                       
+                        <div class="bikeAcceCont">
+                            <div class="row align-center2">
+                                <div class="col-md-8 col-12">
+                                    <div class="img-BIkeName">
+                                        {% set image_url = twig_json_decode(data.cust_orders_product_details ,'image_url','0') %}
+                                        <img class="img-fluid" src="{{ image_url  }}" />
+                                        <div class="imgBikeName">
+                                            <h5 style="font-size: 16px;">{{ twig_json_decode(data.cust_orders_product_details ,'model')  }}</h5>
+                                            <p>{{ twig_json_decode(data.cust_orders_product_details ,'variant')  }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="ordrAccrMang">
+                                        <div class="orderBikePrice">
+                                            <h5 style="justify-content: flex-end;">₹ {{ twig_json_decode(data.cust_orders_product_details ,'showroom_price')  }}</h5>
+                                            <p>Ex Showroom Price</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% set acc_price_count = 0 %}
+                        {% for key, value in data.cust_orders_accessories_details %}
+                        {% set acc_price_count= acc_price_count + value.price %}
+                        <div class="bikeAcceCont">
+                            <div class="row align-center2">
+                                <div class="col-md-8 col-12">
+                                    <div class="img-BIkeName">
+                                        <img class="img-fluid" src="{{ value.image_url.0 }}" />
+                                        <div class="imgBikeName"><h5 style="font-size: 16px;">{{ value.name }}</h5></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="ordrAccrMang">
+                                        <div class="orderBikePrice"><h5 style="justify-content: flex-end;">₹ {{ value.price }}</h5></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                       
+                    </div>
+
+                </div>
+                 <div class="orderGridCard">
+                     <h4>Customer Document</h4>
+              {{ drupal_view('customer_documents', 'block_1', data.id) }}
+                </div>
+                 <div class="orderGridCard">
+                 <input type="hidden" id="mcsl_order_id" value="{{ data.id }}"/>
+                     <h4>MCSL Mail</h4>
+              {{ drupal_view('mcsl_mail', 'block_1', data.id) }}
+                </div>
+                
+            </div>
+            <div class="col-md-4 col-12 mb-30">
+                <div class="myCartCard">
+                    <div class="mycardHeadTop"><h4>Delivery Details</h4></div>
+                    <div class="cartListPrice">
+                        <ul>
+                            <li><span style="font-size: 14px; color: rgb(117, 117, 117); font-weight: 500;">Deliver To Customer</span></li>
+                            <li class="mb-10"><span>{{ twig_json_decode(data.cust_orders_customer_details,'name') }}</span></li>
+                            <li><p>{{ twig_json_decode(data.cust_orders_shipping_address,'address_line1') }}</p></li>
+                            <li><span></span></li>
+                        </ul>
+                    </div>
+                </div>
+
+    
+
+<details class="seven-details">
+    <summary role="button" aria-controls="edit-group-360-degree-image" aria-expanded="false" aria-pressed="false" class="seven-details__summary"><h4>Shipping Detail</h4></summary>
+                <div class="myCartCard" id="accordion">
+
+                    <div class="cartListPrice">
+                        <ul class="ship">
+                           <li>
+                                <p>Type</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'type') }}</span>
+                            </li>
+                            <li>
+                                <p>State</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'state') }}</span>
+                            </li>
+                            <li>
+                                <p>Pincode</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'pincode') }}</span>
+                            </li>
+                            <li>
+                                <p>District</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'district') }}</span>
+                            </li>
+                            <li>
+                                <p>Landmark</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'landmark') }}</span>
+                            </li>
+                            <li>
+                                <p>Address 1</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'address_line1') }}</span>
+                            </li>
+                            <li>
+                                <p>Address 2</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'address_line2') }}</span>
+                            </li>
+                            <li>
+                                <p>Residence Type</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'residence_type') }}</span>
+                            </li>
+                            <li>
+                                <p>Years in current address</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'years_in_current_address') }}</span>
+                            </li>
+                            <li>
+                                <p>Months in current address</p>
+                                <span>{{ twig_json_decode(data.cust_orders_shipping_address,'months_in_current_address') }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+</details>
+<details class="seven-details">
+    <summary role="button" aria-controls="edit-group-360-degree-image" aria-expanded="false" aria-pressed="false" class="seven-details__summary"><h4>Billing Detail</h4></summary>
+                <div class="myCartCard">
+                    
+                    <div class="cartListPrice">
+                        <ul class="ship">
+                           <li>
+                                <p>Type</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'type') }}</span>
+                            </li>
+                            <li>
+                                <p>State</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'state') }}</span>
+                            </li>
+                            <li>
+                                <p>Pincode</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'pincode') }}</span>
+                            </li>
+                            <li>
+                                <p>District</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'district') }}</span>
+                            </li>
+                            <li>
+                                <p>Landmark</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'landmark') }}</span>
+                            </li>
+                            <li>
+                                <p>Address 1</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'address_line1') }}</span>
+                            </li>
+                            <li>
+                                <p>Address 2</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'address_line2') }}</span>
+                            </li>
+                            <li>
+                                <p>Residence Type</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'residence_type') }}</span>
+                            </li>
+                            <li>
+                                <p>Years in current address</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'years_in_current_address') }}</span>
+                            </li>
+                            <li>
+                                <p>Months in current address</p>
+                                <span>{{ twig_json_decode(data.cust_orders_billing_address,'months_in_current_address') }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </details>
+                <div class="myCartCard">
+                    <div class="mycardHeadTop"><h4>Price Break-up</h4></div>
+                    <div class="cartListPrice">
+                        <ul>
+                            <li>
+                                <p>Vehicle Cost (Ex Showroom Price)</p>
+                                <span>₹ {{ twig_json_decode(data.cust_orders_product_details ,'showroom_price')|round  }}</span>
+                            </li>
+                            <li>
+                                <p>Accessories Cost</p>
+                                <span>₹ {{ acc_price_count|round }}</span>
+                            </li>
+                            <li>
+                                <p>Road Tax </p>
+                                <span>₹ {{ data.road_tax|round }}</span>
+                            </li>
+                            {% if data.offer_discount %}
+                            <li>
+                                <p>Coupon Discount</p>
+                                <span>- ₹ {{ data.offer_discount }}</span>
+                            </li>
+                            {% endif %}
+                            {% if data.reward_redeem %}
+                            <li>
+                                <p>Rewards Redeemed</p>
+                                <span>- ₹ {{ data.reward_redeem }}</span>
+                            </li>
+                            {% endif %}
+                            <li>
+                                <p>Insurance Premium</p>
+                                <span>₹ {{ twig_json_decode(data.cust_orders_product_details ,'insurance_amount')  }}</span>
+                            </li>
+                            <li class="subTotal">
+                                <p>Subtotal</p>
+                                <span>₹ {{ data.cust_orders_total_price|round }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="myCartCard">
+                    <div class="mycardHeadTop"><h4>Payment Details</h4></div>
+                    <div class="cartListPrice">
+                        <ul>
+                            <li>
+                                <p>Order Total</p>
+                                <span>₹ {{ data.cust_orders_total_price|round }}</span>
+                            </li>
+                            <li>
+                                <p>Booking Amount</p>
+                                <span>₹ {{ data.cust_orders_token_amount|round }}</span>
+                            </li>
+                            <li>
+                                <p>Payment Method</p>
+                                <span>{{ data.cust_orders_payment_mode_type }}</span>
+                            </li>
+                            <li>
+                                <p>Card No.</p>
+                                <span></span>
+                            </li>
+                            <li>
+                                <p>Transaction ID</p>
+                                <span>{{ data.cust_orders_payment_id }}</span>
+                            </li>
+                            <li>
+                                <p>Pending Amount</p>
+                                <span>{{ data.pending_amount|round }}</span>
+                            </li>
+                            <li class="subTotal">
+                                <p>Subtotal</p>
+                                <span>₹ {{ data.cust_orders_total_price|round }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<div class="row">
+            <div class="col-md-8 col-12 mb-30">
+               
+            </div>
+</div>
+
+
+    </div>
+</div>
+
+ <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>

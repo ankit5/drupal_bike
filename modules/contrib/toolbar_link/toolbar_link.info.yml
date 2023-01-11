@@ -1,0 +1,13 @@
+name: Toolbar Link
+description: Allow to add top level single link on toolbar.
+core:  "8.x"
+core_version_requirement: ^8 || ^9
+type: module
+dependencies:
+  - drupal:toolbar
+configure: entity.toolbar_link_item.collection
+
+# Information added by Drupal.org packaging script on 2020-09-18
+version: '8.x-1.1'
+project: 'toolbar_link'
+datestamp: 1600424628

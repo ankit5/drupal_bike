@@ -1,0 +1,7 @@
+file manager imce:
+  title: 'File Manager and browser imce'
+  restrict access: true
+
+admin custom module:
+  title: 'Admin Custom module'
+  restrict access: true

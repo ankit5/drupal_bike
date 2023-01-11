@@ -1,0 +1,13 @@
+time_picker:
+  version: 1.x
+  js:
+    https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.js: { type: external }
+    js/drupal.time_picker.js: {}
+  css:
+    theme:
+      css/time_picker.css: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/drupalSettings
+    - core/jquery.once

@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function multiple_select_uninstall() {
+  \Drupal::configFactory()->getEditable('multiple_select.settings')->delete();
+}

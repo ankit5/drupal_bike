@@ -1,0 +1,84 @@
+user_module.order_detail:
+  path: '/admin/order_detail/{order_id}'
+  defaults:
+    _controller: '\Drupal\user_module\Controller\OrderController::orderDetail'
+    _title_callback: '\Drupal\user_module\Controller\OrderController::getTitle'
+  requirements: 
+    _permission: 'admin custom module'
+
+user_module.cencel_order:
+  path: '/admin/cencel_order/{order_id}'
+  defaults:
+    _controller: '\Drupal\user_module\Controller\OrderController::cencel_order'
+    _title_callback: '\Drupal\user_module\Controller\OrderController::getTitle'
+  requirements: 
+    _permission: 'admin custom module'
+
+user_module.editcustomer_form:
+  path: '/admin/customer/edit'
+  defaults:
+    _form: '\Drupal\user_module\Form\EditcustomerForm'
+    _title: 'Update'
+  requirements:
+    _permission: 'admin custom module'
+
+user_module.editorder_form:
+  path: '/admin/order/edit'
+  defaults:
+    _form: '\Drupal\user_module\Form\EditorderForm'
+    _title: 'Update'
+  requirements:
+    _permission: 'admin custom module'
+
+user_module.file_manager:
+  path: '/admin/file/manager'
+  defaults:
+    _controller: '\Drupal\imce\Controller\ImceAdminBrowserController::page'
+    _title: 'File Manager'
+  requirements:
+    _permission: 'file manager imce'
+
+user_module.blog_next_prev_api_get:
+  path: /restapi/blog_next_prev/{blog_uuid}
+  defaults:
+    _controller: Drupal\user_module\Controller\BlogNextPrevController::getData
+  methods: ['GET']
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    _auth: ['basic_auth']
+
+user_module.get_city:
+  path: /restapi/get_city/{state}
+  defaults:
+    _controller: Drupal\user_module\Controller\BlogNextPrevController::get_city
+  methods: ['GET']
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    _auth: ['basic_auth']
+
+user_module.review_average:
+  path: /restapi/review_average/{uuid}/{node_type}
+  defaults:
+    _controller: Drupal\user_module\Controller\BlogNextPrevController::review_average
+  methods: ['GET']
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    _auth: ['basic_auth']
+
+user_module.help_status:
+  path: '/admin/help_status/{help_status_id}'
+  defaults:
+    _controller: '\Drupal\user_module\Controller\OrderController::help_status'
+  requirements: 
+    _permission: 'admin custom module'
+
+user_module.examplebatch:
+  path: '/admin/batch-import-example'
+  defaults:
+    _title: 'Import Variant Product Highlight'
+    _form: '\Drupal\user_module\Form\ImportForm'
+  requirements:
+    _permission: 'admin custom module'

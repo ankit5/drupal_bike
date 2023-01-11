@@ -1,0 +1,1128 @@
+<?php
+
+/**
+ * @file
+ * Custom module for alteration and override drupal.
+ */
+
+use Drupal\Core\Url;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Cache\RefinableCacheableDependencyInterface;
+use Drupal\views\Views;
+use Drupal\paragraphs\Entity\Paragraph;
+use Drupal\file\Entity\File;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\Entity\Node;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\InvokeCommand;
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\File\FileSystemInterface;
+use Drupal\image\Entity\ImageStyle;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\Core\Ajax\ReplaceCommand;
+/**
+ * Submit handler for submit variant form.
+ */
+function product_submit_handler_new($form, FormStateInterface $form_state) {
+
+  $import = $form_state->getValue('import');
+  $import_city = $form_state->getValue('import_city');
+  $nid = $form_state->getValue('nid');
+  $node = \Drupal::entityTypeManager()->getStorage('node')->load($nid);
+  if (isset($node->field_city_import->target_id) && $import == 1) {
+
+    $file = File::load($node->field_city_import->target_id);
+    $pp = NULL;
+    // Count row number.
+    $row = 0;
+    // Add you row number for skip
+    // hear we pass 1st row for skip in csv.
+    $skip_row_number = ["1"];
+    $file = fopen($file->getFileUri(), "r");
+    $customer = NULL;
+    $specifications_name = '';
+    while (($data = fgetcsv($file, 1000, ",")) !== FALSE) {
+      $row++;
+      $num = count($data);
+      // Check row for skip row.
+      if (in_array($row, $skip_row_number)) {
+        continue;
+        // Skip row of csv.
+      }
+      else {
+
+        // City field data.
+        if ($data[2] != '') {
+          $paragraph = Paragraph::create([
+            'type' => 'ex_showroom_price',
+            'field_city' => [
+              "value"  => trim($data[0]),
+            ],
+            'field_ex_showroom_price_value' => [
+              "value"  => trim($data[2]),
+            ],
+          ]);
+          $paragraph->save();
+
+          $field_ex_showroom_price_by_city[] = [
+            'target_id' => $paragraph->id(),
+            'target_revision_id' => $paragraph->getRevisionId(),
+          ];
+
+        }
+        //
+        //360 images
+
+        if (isset($data[13]) && $data[13] != '' && $import_city!=1) {
+         $http = \Drupal::httpClient();
+         $options = array();
+         $result = $http->request('get',$data[13], $options);
+         $body_data = $result->getBody()->getContents();
+         
+
+          $image_url = $data[5];
+          $file4 = file_save_data($body_data, "s3://2021-11/".drupal_basename($data[13]), FileSystemInterface::EXISTS_RENAME);
+   $Dfiles[] = [
+        'target_id' => $file4->id(),
+        'alt' => '',
+        'title' => ''
+      ];
+    }
+
+
+        // Color field data.
+        if (isset($data[5]) && $data[5] != '' && $import_city!=1) {
+          $color_image = $data[5];
+         $http = \Drupal::httpClient();
+$options = array();
+$result = $http->request('get', $color_image, $options);
+//$body_class = $result->getBody(); //The class
+$body_data = $result->getBody()->getContents();
+         
+
+          $image_url = $data[5];
+          $file3 = file_save_data($body_data, "s3://2021-11/".drupal_basename($image_url), FileSystemInterface::EXISTS_RENAME);
+
+          $paragraph = Paragraph::create([
+            'type' => 'variant_color',
+            'field_title' => [
+              "value"  => trim($data[3]),
+            ],
+            'field_color_code' => [
+              "value"  => trim($data[4]),
+            ],
+            'field_image' => [
+              'target_id' => $file3->id(),
+              'alt' => '',
+              'title' => '',
+            ],
+          ]);
+          $paragraph->save();
+
+          $field_color[] = [
+            'target_id' => $paragraph->id(),
+            'target_revision_id' => $paragraph->getRevisionId(),
+          ];
+
+        }
+        //
+     // Highlight field data.
+        if (isset($data[14]) && $data[14] != '' && $data[15] != ''  && $import_city!=1) {
+          $h_image = $data[15];
+         $http = \Drupal::httpClient();
+$options = array();
+$result = $http->request('get', $h_image, $options);
+//$body_class = $result->getBody(); //The class
+$body_data = $result->getBody()->getContents();
+         
+
+          $image_url = $data[15];
+          $file3 = file_save_data($body_data, "s3://2021-11/".drupal_basename($image_url), FileSystemInterface::EXISTS_RENAME);
+
+          $paragraph = Paragraph::create([
+            'type' => 'highlight',
+            'field_title' => [
+              "value"  => trim($data[14]),
+            ],
+            'field_description' => [
+              "value"  => trim($data[16]),
+            ],
+            'field_image' => [
+              'target_id' => $file3->id(),
+              'alt' => '',
+              'title' => '',
+            ],
+          ]);
+          $paragraph->save();
+
+          $field_highlight[] = [
+            'target_id' => $paragraph->id(),
+            'target_revision_id' => $paragraph->getRevisionId(),
+          ];
+
+        }
+        //
+
+
+        // Specification field data.
+        if (isset($data[7]) && $data[7] != ''  && $import_city!=1) {
+
+          $field_key_feature[] = Paragraph::create([
+            'type' => 'key_feature_value_type',
+            'field_title' => [
+              "value"  => trim($data[7]),
+            ],
+            'field_value' => [
+              "value"  => trim($data[8]),
+            ],
+            'field_highlight' => [
+              "value"  => trim($data[9]),
+            ],
+          ]);
+
+          if ($data[6] != '') {
+            $paragraph = Paragraph::create([
+
+              'type' => 'specifications',
+              'field_specifications_name' => [
+                "value"  => trim($data[6]),
+              ],
+              'field_key_feature' => $field_key_feature,
+            ]);
+            unset($field_key_feature);
+            $paragraph->save();
+
+            $field_specifications_name_para[] = [
+              'target_id' => $paragraph->id(),
+              'target_revision_id' => $paragraph->getRevisionId(),
+            ];
+          }
+
+        }
+        //
+        // Feature field data.
+        if (isset($data[11]) && $data[11] != '' && $import_city!=1) {
+
+          $field_features_value[] = Paragraph::create([
+            'type' => 'feature_value',
+            'field_value' => [
+              "value"  => trim($data[11]),
+            ],
+          ]);
+
+          if ($data[10] != '') {
+            $paragraph = Paragraph::create([
+
+              'type' => 'features',
+              'field_feature_name' => [
+                "value"  => trim($data[10]),
+              ],
+              'field_features_value' => $field_features_value,
+            ]);
+            unset($field_features_value);
+            $paragraph->save();
+
+            $field_features_name_para[] = [
+              'target_id' => $paragraph->id(),
+              'target_revision_id' => $paragraph->getRevisionId(),
+            ];
+          }
+
+        }
+      }
+
+    }
+
+    fclose($file);
+    if (isset($field_ex_showroom_price_by_city[0])) {
+      $node->field_ex_showroom_price_by_city = $field_ex_showroom_price_by_city;
+    }
+    if (isset($field_color[0])) {
+      $node->field_color = $field_color;
+    }
+    if (isset($field_highlight[0])) {
+      $node->field_product_higlight = $field_highlight;
+    }
+    if (isset($field_specifications_name_para[0])) {
+      $node->field_specifications_name_para = $field_specifications_name_para;
+    }
+    if (isset($field_features_name_para[0])) {
+      $node->field_features_name_para = $field_features_name_para;
+    }
+    if (isset($Dfiles[0])) {
+    $node->field_degree_image = $Dfiles;
+    }
+    $node->save();
+   
+  }
+}
+
+
+
+
+
+/**
+ * Attach the library on every page.
+ */
+function user_module_page_attachments_alter(array &$page) {
+  $page['#attached']['library'][] = 'user_module/drupal_js';
+}
+
+/**
+ * Ajax callback message type.
+ */
+function _mymodule_select_type ($form, FormStateInterface $form_state){
+   // Run query on database.
+
+    $message_type = $form_state->getValue('field_message_type')[0]['value'];
+    if($message_type == 'city') {
+    $database = \Drupal::database();
+    $results = $database->query("SELECT node__field_message.field_message_value AS node__field_message_field_message_value, CAST(node_field_data.title AS int) AS node_field_data_title, node_field_data.nid AS nid
+FROM
+node_field_data node_field_data
+LEFT JOIN node__field_message_type node__field_message_type_value_0 ON node_field_data.nid = node__field_message_type_value_0.entity_id AND node__field_message_type_value_0.field_message_type_value = 'city'
+LEFT JOIN node__field_message node__field_message ON node_field_data.nid = node__field_message.entity_id AND node__field_message.deleted = '0'
+WHERE (node_field_data.status = '1') AND (node_field_data.type IN ('messages')) AND (node__field_message_type_value_0.field_message_type_value = 'city')
+ORDER BY node_field_data_title desc
+LIMIT 1 OFFSET 0")->fetchObject();
+
+  $last_id = $results->node_field_data_title+1;
+  $response = new AjaxResponse();
+
+
+
+  $response->addCommand(new InvokeCommand('#edit-title-0-value', 'val', [$last_id]));
+ // $response->addCommand(new InvokeCommand('#edit-title-0-value', 'attr', array('disabled', 'disabled')));
+} else {
+  $response = new AjaxResponse();
+  $response->addCommand(new InvokeCommand('#edit-title-0-value', 'val', ['']));
+ // $response->addCommand(new InvokeCommand('#edit-title-0-value', 'removeAttr', array('disabled', 'disabled')));
+}
+
+//$form['title']['widget'][0]['value']['#default_value'] ='COUCOU1'; 
+$form['field_state']['widget']['#validated'] = TRUE;
+$form_state->setRebuild(true);
+
+  // $response->addCommand(new ReplaceCommand(NULL, $form));
+     
+ return $response;
+
+}
+
+/**
+ * Validation handler for submit message form.
+ */
+function _form_validation_messages(&$form, FormStateInterface $form_state) 
+{
+
+$title = $form_state->getValue('title')[0]['value'];
+$m_type = $form_state->getValue('field_message_type')[0]['value'];
+$database = \Drupal::database();
+$results = $database->query("SELECT node__field_message.field_message_value AS node__field_message_field_message_value, node_field_data.title AS node_field_data_title, node_field_data.nid AS nid
+FROM
+{node_field_data} node_field_data
+LEFT JOIN {node__field_message_type} node__field_message_type_value_0 ON node_field_data.nid = node__field_message_type_value_0.entity_id AND node__field_message_type_value_0.field_message_type_value = '$m_type'
+LEFT JOIN {node__field_message} node__field_message ON node_field_data.nid = node__field_message.entity_id AND node__field_message.deleted = '0'
+WHERE (node_field_data.status = '1') AND (node_field_data.type IN ('messages')) AND (node_field_data.title ILIKE '$title') AND (node__field_message_type_value_0.field_message_type_value = '$m_type')
+ORDER BY node__field_message_field_message_value ASC NULLS FIRST
+LIMIT 50 OFFSET 0")->fetchObject();
+
+    if (isset($results->nid)) {
+      $form_state->setErrorByName('title', t('This Key already exists.'));  
+    }
+    
+       
+}
+
+
+
+/**
+ * Implements hook_form_alter().
+ */
+function user_module_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  if ($form_id == 'user_login_form') {
+     $form['name']['#attributes']['autocomplete'] = 'off';
+    $form['pass']['#attributes']['autocomplete'] = 'off';
+    $form['#submit'][] = '_user_module_user_login_form_submit';
+  }
+
+  if ($form_id == 'node_messages_edit_form') {
+
+    $form['title']['#disabled'] = 'disabled';
+    $form['field_message_type']['#disabled'] = 'disabled';
+  }
+
+  if ($form_id == 'node_messages_form') {
+    
+    $form['#validate'][] = '_form_validation_messages';
+
+    $form['field_message_type']['widget']['#ajax'] = [
+      'callback' => '_mymodule_select_type',
+      'event' => 'change',
+      ];
+     // $form['field_message_type']['widget']['#submit'] =['::MYMODULE_MYFORM_remove_item'][]
+        // Since we are removing a name, don't validate until later.
+     //  $form['field_message_type']['#limit_validation_errors'] = [];
+//$form['field_state']['widget']['#limit_validation_errors'] = [];
+//$form['field_state']['#limit_validation_errors'] = array();
+   $form_state->setCached(FALSE);
+  }
+
+  if ($form_id == 'taxonomy_term_category_delete_form' || $form_id == 'taxonomy_term_brand_delete_form' || $form_id == 'taxonomy_term_tags_delete_form' || $form_id == 'taxonomy_term_accessories_category_delete_form') {
+
+    // Firstly, get the view in question.
+    $view = Views::getView('taxonomy_term_confirm_content');
+
+    // Set which view display we want.
+    $view->setDisplay('page_1');
+    $path = \Drupal::request()->getpathInfo();
+    $arg  = explode('/', $path);
+    $arg = $arg[3];
+    // Pass any arguments that the view display requires.
+    $view->setArguments([$arg]);
+
+    // Execute the view.
+    $view->execute();
+    // Render the view.
+    @$result = \Drupal::service('renderer')->render($view->render());
+    $form['#suffix'] = '<div> ' . $result . ' </div>';
+  }
+
+  if ($form_id == 'node_product_delete_form') {
+
+    // Firstly, get the view in question.
+    $view = Views::getView('variant_confirmation_delete');
+
+    // Set which view display we want.
+    $view->setDisplay('page_1');
+    $path = \Drupal::request()->getpathInfo();
+    $arg  = explode('/', $path);
+    $arg = $arg[2];
+    // Pass any arguments that the view display requires.
+    $view->setArguments([$arg]);
+
+    // Execute the view.
+    $view->execute();
+    // Render the view.
+    @$result = \Drupal::service('renderer')->render($view->render());
+    $form['#suffix'] = '<div> ' . $result . ' </div>';
+  }
+
+  /*$view_names = ['customer_orders3','help_center3'];
+  $view = $form_state->getStorage('view');
+  if ($form_id == 'views_exposed_form' && in_array($view['view']->id(), $view_names)) {
+    $form['created_at']['#type'] = 'textfield';
+    $form['created_at']['#attributes']['class'][] = 'datepicker-text';
+    $form['created_at']['#attributes']['placeholder'] = 'yyyy-dd-mm';
+    $form['created_at']['#attributes']['autocomplete'] = 'off';
+    $form['#attached']['library'][] = 'core/drupal.date';
+    $form['#attached']['library'][] = 'user_module/user_module_js';
+  }
+*/
+  $view_names = ['help_center'];
+  $view = $form_state->getStorage('view');
+  if ($form_id == 'views_exposed_form' && in_array($view['view']->id(), $view_names)) {
+   
+   $options[''] = '-Any-';
+    $options['Pending'] = 'Pending';
+    $options['Not resolved'] = 'Not resolved';
+    $options['Resolved'] = 'Resolved';
+
+   $form['status']['#type'] = 'select';
+   $form['status']['#options'] = $options;
+   $form['status']['#size'] = 1;
+
+   $view = Views::getView('customer_message_json'); 
+$view->setDisplay('rest_export_1');
+$view->setExposedInput(['type' => 'Reason']);
+$view->execute();
+@$rendered = \Drupal::service('renderer')->render($view->render());
+$json = $rendered->jsonSerialize();
+$json = json_decode($json,true);
+$options_r = [];
+$options_r[''] = '-Any-';
+foreach($json as $value){
+
+ $options_r[$value['name']] = $value['message'];
+}
+
+   $form['reason']['#type'] = 'select';
+   $form['reason']['#options'] = $options_r;
+   $form['reason']['#size'] = 1;
+   
+  }
+
+  if ($form_id == 'node_product_edit_form' || $form_id == 'node_product_form') {
+
+    $form['import'] = [
+      '#type'          => 'checkbox',
+      '#title'         => t('Yes'),
+      '#default_value' => FALSE,
+      '#weight' => 18,
+      '#description' => t('Admin needs to select this checkbox if he wants to add cities,colors,specifications and features with the help of Import
+functionality.'),
+    ];
+     $form['import_city'] = [
+      '#type'          => 'checkbox',
+      '#title'         => t('Yes'),
+      '#default_value' => FALSE,
+      '#weight' => 19,
+      '#description' => t('Only City update from this import file.'),
+    ];
+    $form['#group_children']['import'] = 'group_import';
+    $form['group_import']['import'] = $form['import'];
+    $form['group_import']['import_city'] = $form['import_city'];
+    unset($form['import']);
+    unset($form['import_city']);
+
+    $form['actions']['submit']['#submit'][] = 'product_submit_handler_new';
+    $form['#validate'][] = '_form_validation_product';
+
+  }
+
+ 
+
+  if ($form_id == 'node_store_edit_form2' || $form_id == 'node_store_form2') {
+
+
+ $form['field_store_city']['#prefix'] = '<div id="city-wrapper">';
+ $form['field_store_city']['#suffix'] = '</div>';
+  
+
+ $form['field_state']['widget']['#ajax'] = [
+      'callback' => 'sandbox_ajax_dropdown_city',
+      'event' => 'change',
+      'wrapper' => 'city-wrapper',
+      'progress' => [
+        'type' => 'throbber',
+        'message' => t('Fetching Cities...'),
+      ],
+      ];
+
+ /* $field_select1_value = $form_state->getValue('field_state');
+    if ($form_id == 'node_store_edit_form' && !$field_select1_value) {
+      $field_select1_edit_value = isset($form['field_state']['widget']['#default_value'][0]) ? $form['field_state']['widget']['#default_value'][0] : null;
+      $form['field_store_city']['widget']['#options'] = _load_city($field_select1_edit_value);
+    }*/
+
+//$form['field_state']['#validated'] = TRUE;
+//$form['field_store_city']['#validated'] = TRUE;
+$form_state->setRebuild(true);
+// $form_state->setCached(FALSE);
+
+}
+
+  if ($form_id == 'node_booking_amount_edit_form' || $form_id == 'node_booking_amount_form') {
+
+    $form['#validate'][] = '_form_validation_token_amount';
+
+  }
+
+  if ($form_id == 'node_popular_comparison_edit_form' || $form_id == 'node_popular_comparison_form') {
+
+    $form['#validate'][] = '_form_validation_popular_comparison';
+
+  }
+   if ($form_id == 'node_service_reminder_edit_form' || $form_id == 'node_service_reminder_form') {
+
+   $form['title']['#access'] = FALSE;
+
+  }
+}
+
+function user_module_form_views_exposed_form_alter(&$form, FormStateInterface $form_state) {
+  if ($form['#id'] == 'views-exposed-form-stores-page-1') {
+
+  
+
+ $form['field_state_value2']['#ajax'] = [
+      'callback' => 'sandbox_ajax_dropdown_city2',
+      'event' => 'change',
+      'wrapper' => 'city-wrapper',
+      ];
+
+$field_select1_edit_value = isset($_GET['field_state_value']) ? $_GET['field_state_value'] : '';
+//var_dump($form_state->getValue('field_state'));
+ 
+ 
+ 
+  $options_r = _load_city($field_select1_edit_value,'All');
+    $form['field_store_city_value']['#options'] = $options_r;
+}
+  }
+
+function sandbox_ajax_dropdown_city(array &$form, FormStateInterface $form_state) {
+ $state = $form_state->getValue('field_state')[0]['value'];
+ $form['field_store_city']['#validated'] = TRUE;
+ $form['field_state']['#validated'] = TRUE;
+ $form['field_store_city']['widget']['#options'] = _load_city($state);
+ $form['field_state']['#validated'] = TRUE;
+$form['field_store_city']['#validated'] = TRUE;
+//$form['field_store_city']['widget']['#ajax']['#limit_validation_errors'] = array();
+$form_state->setRebuild(true);
+    return $form['field_store_city'];
+}
+
+function sandbox_ajax_dropdown_city2(array &$form, FormStateInterface $form_state) {
+
+ $state = $form_state->getValue('field_state_value');
+ 
+ $form['field_store_city_value']['#options'] = _load_city($state,'All');
+
+    return $form['field_store_city_value'];
+}
+
+function _load_city($state,$cond='_none') {
+  
+  $database = \Drupal::database();
+    $query = $database->query("SELECT node__field_message.field_message_value AS node__field_message_field_message_value, node_field_data.nid AS nid, node_field_data.title AS title
+FROM
+{node_field_data} node_field_data
+LEFT JOIN {node__field_message_type} node__field_message_type_value_0 ON node_field_data.nid = node__field_message_type_value_0.entity_id AND node__field_message_type_value_0.field_message_type_value = 'city'
+INNER JOIN {node__field_state} node__field_state ON node_field_data.nid = node__field_state.entity_id AND node__field_state.deleted = '0' AND (node__field_state.langcode = node_field_data.langcode OR node__field_state.bundle = 'store')
+LEFT JOIN {node__field_message} node__field_message ON node_field_data.nid = node__field_message.entity_id AND node__field_message.deleted = '0'
+WHERE ((node__field_state.field_state_value = '$state')) AND ((node_field_data.type IN ('messages')) AND (node__field_message_type_value_0.field_message_type_value = 'city') AND (node_field_data.status = '1'))
+ORDER BY node__field_message_field_message_value ASC");
+
+    $result = $query;
+ $options_r = [];
+  $options_r[$cond] = '-Any-';
+if($result){
+  while ($row = $result->fetchObject()) {
+    $options_r[$row->title] = $row->node__field_message_field_message_value;
+  }
+}
+
+  return $options_r;
+}
+
+/**
+ * Validation handler for submit Token amount form.
+ */
+function _form_validation_token_amount(&$form, FormStateInterface $form_state) {
+
+  if ($form_state->hasValue('field_flat_percentage')) {
+    $flat_percentage = $form_state->getValue('field_flat_percentage');
+    $field_min_price = $form_state->getValue('field_min_price');
+    $field_max_price = $form_state->getValue('field_max_price');
+    $field_amount = $form_state->getValue('field_amount');
+
+    if ($flat_percentage[0]['value'] == 'Flat' && $field_amount[0]['value'] < $field_min_price[0]['value'] || $field_amount[0]['value'] > $field_max_price[0]['value']) {
+      $form_state->setErrorByName('field_amount', t('Token amount should be between min and max price'));
+    }
+
+  }
+}
+
+/**
+ * Validation handler for submit Popular comparison form.
+ */
+function _form_validation_popular_comparison(&$form, FormStateInterface $form_state) {
+  if (!isset($form_state->getValue('field_compare_products')[1])) {
+    $form_state->setErrorByName('field_compare_products', t('Add Minimum two Product'));
+  }
+
+}
+
+/**
+ * Validation handler for submit product form.
+ */
+function _form_validation_product(&$form, FormStateInterface $form_state) {
+
+  $import = $form_state->getValue('import');
+  $field_is_launched = $form_state->getValue('field_is_launched')['value'];
+  $field_expected_launched_date = $form_state->getValue('field_expected_launched_date')[0]['value'];
+
+  
+
+ if ($field_is_launched == 1) {
+  if(!isset($field_expected_launched_date)){
+      $form_state->setErrorByName('field_expected_launched_date', t('Launched Date field is required.'));
+    }
+    }
+
+  if (count($form_state->getValue('field_ex_showroom_price_by_city')) < 2) {
+    if ($import == 0) {
+      $form_state->setErrorByName('field_ex_showroom_price_by_city', t('Ex-showroom Price by city field is required.'));
+    }
+  }
+  if (count($form_state->getValue('field_color')) < 2) {
+    if ($import == 0) {
+      $form_state->setErrorByName('field_color', t('Color field is required.'));
+    }
+  }
+
+}
+
+/**
+ * Remove tab View of entity page.
+ */
+function user_module_menu_local_tasks_alter(&$data, $route_name, RefinableCacheableDependencyInterface &$cacheability) {
+  if ($route_name == 'entity.node.edit_form') {
+    unset($data['tabs'][0]['entity.node.canonical']);
+  }
+
+  unset($data['tabs'][0]['entity.user.canonical']);
+
+}
+
+function product_avg_update($nid){
+  $node = Node::load($nid);
+ $render_array = $node->field_product_rate->view('full');
+
+ $asd = \Drupal::service('renderer')->renderPlain($render_array);
+// @$rendered = \Drupal::service('renderer')->render($view->render());
+
+ $asd = strip_tags($asd);
+ $asd = trim(preg_replace('/\s\s+/', '', $asd));
+//$qdad = json_encode($asd,true);
+//print_r($qdad);
+
+      $average_rating = round($asd, 1);
+    /* print $average_rating;
+  exit;*/
+ 
+
+
+ // Set value for field.
+      //$node->field_rating_average->value = $average_rating;
+     // $node->save();
+  $connection = \Drupal::database();
+     $connection->merge('node__field_rating_average')
+  ->key('entity_id', $nid)
+  ->fields([
+      'entity_id' => $nid,
+      'bundle' => 'product_main',
+      'revision_id' => $nid,
+      'langcode' => 'en',
+      'field_rating_average_value' => $average_rating,
+  ])
+  ->execute();
+
+
+
+
+}
+
+
+
+/**
+ * Implements hook_entity_presave().
+ */
+function user_module_entity_presave(EntityInterface $entity) {
+
+  // Comment field alter before submiting form.
+  if ($entity->getEntityType()->id() == 'comment') {
+
+    $nid = $entity->getCommentedEntityId();
+    if ($entity->getTypeId() == 'product_review') {
+      
+    //  product_avg_update($nid);
+
+
+    }
+
+  }
+   if ($entity->bundle() == 'service_reminder') {
+$brand = $entity->get('field_brand')->getValue();
+$b_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($brand[0]['target_id']);
+     
+$entity->setTitle($b_term->name->value." Service Reminder");
+
+   }
+
+  if ($entity->bundle() == 'product_main' && $entity->get('status')->value=='1') {
+
+    $status = $entity->get('field_brand')->getValue();
+ 
+   $element = $entity->get('field_add_products')->getValue();
+   $myLastElement = reset($element);
+   $entity->field_add_products_single->target_id = $myLastElement['target_id'];
+
+   $categoryes = $entity->get('field_category')->getValue();
+   
+     $brand = $entity->get('field_brand')->getValue();
+     $b_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($brand[0]['target_id']);
+      $brand = [
+            'id' => $b_term->uuid->value,
+            'name' => $b_term->name->value,
+          ];
+   
+   foreach ($categoryes as $key => $value) {
+       $c_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($value['target_id']);
+       $category[] = [
+            'id' => $c_term->uuid->value,
+            'name' => $c_term->name->value,
+          ];
+   }
+    $node = \Drupal\node\Entity\Node::load($myLastElement['target_id']);
+   $city_id = $node->get('field_ex_showroom_price_by_city')->getValue();
+   foreach ($city_id as $key => $value) {
+       
+       $c_paragraph = Paragraph::load($value['target_id']);
+       $city[] = [
+            'id' => $c_paragraph->get('field_city')->value,
+            'name' => $c_paragraph->get('field_city')->view()[0]['#markup'],
+            'price' => $c_paragraph->get('field_ex_showroom_price_value')->value,
+          ];
+   }
+   
+   $type = $entity->get('field_product_type_node')->getValue();
+   $t_term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->load($type[0]['target_id']);
+   
+   $color_id = $node->get('field_color')->getValue();
+   $paragraph = Paragraph::load($color_id[0]['target_id']);
+   $path = $paragraph->get('field_image')->entity->getFileUri();
+   $url = ImageStyle::load('576x340')->buildUrl($path);
+   /*print "<pre>";
+   print_r();
+   print "</pre>";*/
+   $data['retailer_id'] = feed_vizury_retailer_id;
+$data['product']['metadata'] = array(
+'name' => $entity->get('title')->value,
+'description' => $node->get('body')->value,
+'reference_id' => $entity->get('uuid')->value,
+'website' => website_url.'bike-detail/'.$entity->get('uuid')->value,
+'is_launched' => true,
+'is_active' => ($entity->get('status')->value=='1')?true:false,
+'shelf_units' => NULL,
+'original_price' => $node->get('field_ex_showroom_price')->value,
+'discounted_price' => $node->get('field_ex_showroom_price')->value,
+'media_url' => $url
+);
+$data['product']['properties']['category'] = $category;
+$data['product']['properties']['brand'] = $brand;
+$data['product']['properties']['type'] = $t_term->name->value;
+$data['product']['properties']['city'] = $city;
+$payload = json_encode($data);
+//print $payload;
+//exit;
+
+// API URL
+$url = 'https://feed.vizury.com/engage360';
+
+// Create a new cURL resource
+$ch = curl_init($url);
+
+
+//$payload = json_encode(array("user" => $data));
+
+// Attach encoded JSON string to the POST fields
+curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+
+// Set the content type to application/json
+curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+
+// Return response instead of outputting
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+// Execute the POST request
+$result = curl_exec($ch);
+
+// Close cURL resource
+curl_close($ch);
+$json = json_decode($result, TRUE);
+if($json['status']==200){
+
+  \Drupal::messenger()->addStatus('Feed Vizury : '.$json['message']);
+}else{
+
+  \Drupal::messenger()->addWarning('Feed Vizury : '.$result);
+}
+//
+
+
+  }
+}
+
+/**
+ * Implements hook_preprocess_menu_local_task().
+ */
+
+/**
+ * Add css class in quick_clone Menu.
+ */
+function user_module_preprocess_menu_local_task(&$variables) {
+  $url = $variables['link']['#url'];
+  if ($url instanceof Url && $url->getRouteName() == 'quick_node_clone.node.quick_clone') {
+    $variables['link']['#options']['attributes']['class'][] = 'quick_clone';
+  }
+}
+
+/**
+ * Add custom library js for toolbar.
+ */
+function user_module_preprocess_html(&$variables) {
+  $variables['#attached']['library'][] = 'user_module/toolbar';
+}
+
+/**
+ * Redirect submit handler for login form.
+ */
+function _user_module_user_login_form_submit($form, FormStateInterface $form_state) {
+  $form_state->setRedirect('entity.user.edit_form', ['user' => \Drupal::currentUser()->id()]);
+}
+
+/**
+ * Alter toolbar tab.
+ */
+function user_module_toolbar_alter(&$items) {
+
+  // Home tab remove.
+  $items['home']['tab']['#url'] = '/';
+  $items['user']['#wrapper_attributes']['class'] = [
+    'toolbar-tab-user',
+  ];
+}
+
+/**
+ * Add customers table relationship.
+ */
+function user_module_views_data_alter(array &$data) {
+  $data['cust_orders']['just_put_something_here'] = [
+    'title' => t('VDC Customers Table'),
+    'relationship' => [
+      'base' => 'customers',
+      'base field' => 'id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC Customers Table Relationship'),
+    ],
+  ];
+  $data['cust_orders']['Loan_table'] = [
+    'title' => t('VDC Loan Table'),
+    'relationship' => [
+      'base' => 'cust_loans',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC Loan Table Relationship'),
+    ],
+  ];
+  $data['cust_orders']['Cust_document'] = [
+    'title' => t('Cust Document'),
+    'relationship' => [
+      'base' => 'cust_documents',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC Documents Table Relationship'),
+    ],
+  ];
+  $data['cust_orders']['Cust_document_order'] = [
+    'title' => t('Cust Document base on order id'),
+    'relationship' => [
+      'base' => 'cust_documents',
+      'base field' => 'order_id',
+      'field' => 'id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC Documents Table Relationship base on order id'),
+    ],
+  ];
+  $data['cust_orders']['cust_addresses'] = [
+    'title' => t('cust_addresses'),
+    'relationship' => [
+      'base' => 'cust_addresses',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC cust_addresses Table Relationship'),
+    ],
+  ];
+
+   $data['cust_orders']['cust_occupations'] = [
+    'title' => t('cust_occupations'),
+    'relationship' => [
+      'base' => 'cust_occupations',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC cust_occupations Table Relationship'),
+    ],
+  ];
+
+    $data['cust_orders']['cust_properties'] = [
+    'title' => t('cust_properties'),
+    'relationship' => [
+      'base' => 'cust_properties',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC cust_properties Table Relationship'),
+    ],
+  ];
+
+   $data['cust_orders']['cust_credit_ratings'] = [
+    'title' => t('cust_credit_ratings'),
+    'relationship' => [
+      'base' => 'cust_credit_ratings',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC cust_credit_ratings Table Relationship'),
+    ],
+  ];
+
+   $data['cust_orders']['cust_references'] = [
+    'title' => t('cust_references'),
+    'relationship' => [
+      'base' => 'cust_references',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC cust_credit Table Relationship'),
+    ],
+  ];
+
+   $data['cust_orders']['cust_offline_kycs'] = [
+    'title' => t('cust_offline_kycs'),
+    'relationship' => [
+      'base' => 'cust_offline_kycs',
+      'base field' => 'customer_id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC cust_offline_kycs Table Relationship'),
+    ],
+  ];
+
+
+
+   $data['user_logins']['Customers_table_user'] = [
+    'title' => t('VDC Customers Table'),
+    'relationship' => [
+      'base' => 'customers',
+      'base field' => 'user_login_id',
+      'field' => 'id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('VDC Customers Table Relationship'),
+    ],
+  ];
+  $data['help_centres']['Customers_table'] = [
+    'title' => t('VDC Customers Table'),
+    'relationship' => [
+      'base' => 'customers',
+      'base field' => 'id',
+      'field' => 'customer_id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('Customers table'),
+    ],
+  ]; 
+  $data['help_centres']['Remark_table'] = [
+    'title' => t('VDC Remark Table'),
+    'relationship' => [
+      'base' => 'remarks',
+      'base field' => 'request_id',
+      'field' => 'id',
+      'id' => 'views_database_connector_relationship',
+      'label' => t('Remark table'),
+    ],
+  ]; 
+
+}
+
+/**
+ * Implements hook_theme().
+ */
+function user_module_theme() {
+  // Add order detail theme.
+  $theme['order_detail'] = [
+    'variables' => ['order_id' => NULL, 'data' => []],
+    'template' => 'order_detail',
+  ];
+
+  return $theme;
+}
+
+/**
+ * City select option allowed values function.
+ */
+function user_module_city_allowed_values_bundle() {
+
+$view = Views::getView('customer_message_json'); 
+$view->setDisplay('rest_export_1');
+$view->setExposedInput(['type' => 'city']);
+$view->execute();
+@$rendered = \Drupal::service('renderer')->render($view->render());
+$json = $rendered->jsonSerialize();
+$json = json_decode($json,true);
+$options = [];
+if(isset($json[0]['name'])){
+foreach($json as $value){
+
+ $options[$value['name']] = $value['message'];
+}
+}
+  return $options;
+}
+
+/**
+ * State select option allowed values function.
+ */
+function user_module_state_allowed_values_bundle() {
+
+$view = Views::getView('customer_message_json'); 
+$view->setDisplay('rest_export_1');
+$view->setExposedInput(['type' => 'state']);
+$view->execute();
+@$rendered = \Drupal::service('renderer')->render($view->render());
+$json = $rendered->jsonSerialize();
+$json = json_decode($json,true);
+$options = [];
+if(isset($json[0]['name'])){
+foreach($json as $value){
+
+ $options[$value['name']] = $value['message'];
+}
+}
+  return $options;
+}
+
+ /**
+ * Implements hook_entity_view_alter().
+ */
+function user_module_entity_view_alter(array &$build, EntityInterface $entity, EntityViewDisplayInterface $display) { 
+  if ($build['#view_mode'] == 'full' && isset($build['#theme']) && $build['#theme'] == 'node') {
+
+    $id = $entity->id();
+    if($id != 157){
+    $url = Url::fromRoute('entity.node.edit_form', ['node' => $id])->toString();
+        // Redirecting to edit.
+       
+  $response = new RedirectResponse($url);
+$response->send();
+exit;   
+
+
+      }
+  }
+}
+
+/**
+ * Implements hook_page_attachments().
+ */
+function user_module_page_attachments(array &$page) {
+  $page['#attached']['drupalSettings']['api_url'] = api_url;
+  $page['#attached']['drupalSettings']['api_Authorization'] = api_Authorization;
+  $page['#attached']['drupalSettings']['login'] = \Drupal::currentUser()->id();
+}
+
+/**
+ * Implements hook_views_query_alter().
+ */
+function user_module_views_query_alter(Drupal\views\ViewExecutable $view, Drupal\views\Plugin\views\query\Sql  $query) {
+  switch($view->storage->id()){
+    case 'product_filter_api_test';
+
+  //$query->addField(NULL, 'paragraphs_item_field_data_node__field_ex_showroom_city__paragraph__field_price.field_price_value', '', ['function' => 'sum']);
+   // $query->addGroupBy('node_field_data.nid');
+   
+  // $query->addField('node_field_data', 'nid', '', ['function' => 'groupby']);
+  //  $query->addGroupBy('node_field_data.nid');
+    $query->addField('node', 'nid', 'node_nid', array('function' => 'groupby'));
+//Distinct = TRUE -used to avoid unnecessary groupby conditions
+$query->distinct=TRUE;
+    break;
+  }
+}
