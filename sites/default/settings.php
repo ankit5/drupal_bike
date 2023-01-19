@@ -78,7 +78,7 @@ $databases = [];
   'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
   'driver' => 'pgsql',
 );*/
-$databases['default']['default'] = array (
+/*$databases['default']['default'] = array (
   'database' => 'moto12',
   'username' => 'postgres',
   'password' => 'admin',
@@ -88,19 +88,31 @@ $databases['default']['default'] = array (
   'port' => '5432',
   'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
   'driver' => 'pgsql',
-);
-
-// Connection for Backend Database
-/*$databases['external']['default'] = array (
-  'database' => $aws_db['dbname'],
-  'username' => $aws_db['username'],
-  'password' => $aws_db['password'],
-  'prefix' => '',
-  'host' => $aws_db['host'],
-  'port' => '5432',
-  'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
-  'driver' => 'pgsql',
 );*/
+
+/*$databases['default']['default'] = [
+    'database' => 'drupal_bike',
+    'username' => 'root',
+    'password' => 'admin',
+    'host' => 'localhost',
+    'port' => '3306',
+    'prefix' => '',
+    'driver' => 'mysql',
+   'prefix' => '',
+    'collation' => 'utf8mb4_general_ci',
+  ];*/
+// Connection for Backend Database
+$databases['default']['default'] = array (
+  'database' => 'ankitver_drupalbike',
+  'username' => 'ankitver_drupal',
+  'password' => '8y{a(o-IrhQ~',
+    'host' => 'localhost',
+    'port' => '3306',
+    'prefix' => '',
+    'driver' => 'mysql',
+   'prefix' => '',
+    'collation' => 'utf8mb4_general_ci',
+);
 $databases['external']['default'] = array (
   'database' => 'nodejs4',
   'username' => 'postgres',
