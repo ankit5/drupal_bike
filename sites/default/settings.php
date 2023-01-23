@@ -114,7 +114,7 @@ $databases['default']['default'] = array (
     'collation' => 'utf8mb4_general_ci',
 );
 $databases['external']['default'] = array (
-  'database' => 'nodejs4',
+  'database' => 'ankitver_nodejs4',
   'username' => 'ankitver_drupal',
   'password' => '8y{a(o-IrhQ~',
     'host' => 'localhost',
