@@ -115,6 +115,17 @@ $databases['default']['default'] = array (
 );
 $databases['external']['default'] = array (
   'database' => 'nodejs4',
+  'username' => 'ankitver_drupal',
+  'password' => '8y{a(o-IrhQ~',
+    'host' => 'localhost',
+    'port' => '3306',
+    'prefix' => '',
+    'driver' => 'mysql',
+   'prefix' => '',
+    'collation' => 'utf8mb4_general_ci',
+);
+/*$databases['external']['default'] = array (
+  'database' => 'nodejs4',
   'username' => 'postgres',
   'password' => 'admin',
   'prefix' => '',
@@ -122,7 +133,7 @@ $databases['external']['default'] = array (
   'port' => '5432',
   'namespace' => 'Drupal\\Core\\Database\\Driver\\pgsql',
   'driver' => 'pgsql',
-);
+);*/
 
 //AWS Secret keys by Secret Name
 //$aws_secret_keys = aws_d('CMS_Secret_Keys');
